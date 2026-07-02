@@ -1,0 +1,1150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daewoo E&C Vina — Infrastructure &amp; Security Dashboard | June 2026</title>
+<script>
+/* Set theme before first paint to avoid a flash of the wrong theme */
+(function(){
+  try{
+    var saved = localStorage.getItem('tv-dashboard-theme');
+    var theme = saved || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark');
+    document.documentElement.setAttribute('data-theme', theme);
+  }catch(e){
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }
+})();
+</script>
+<style>
+  :root{
+    --bg0:#080d18; --bg1:#0d1526; --panel:rgba(255,255,255,.035); --panel-solid:#121b2e; --panel2:#0f1729;
+    --border:rgba(255,255,255,.09); --text:#eaf0fb; --sub:#93a5c4; --sub2:#6d7fa0; --text-soft:#dbe6f7;
+    --accent:#4da3ff; --accent-soft:rgba(77,163,255,.15);
+    --mint:#5eead4; --amber:#fbbf24; --coral:#f87171;
+    --ok:#34d399; --warn:#fbbf24; --crit:#f87171;
+    --c-boatcon:#4da3ff; --c-boatnet:#fbbf24; --c-boatsale:#5eead4;
+    --surface-1:rgba(255,255,255,.02); --surface-2:rgba(255,255,255,.04); --surface-2-hover:rgba(255,255,255,.09);
+    --nav-bg:rgba(0,0,0,.15); --chip-bg:rgba(255,255,255,.07);
+    --row-hover:rgba(255,255,255,.035); --row-alt:rgba(255,255,255,.015);
+    --track-bg:rgba(255,255,255,.06); --marker:#ffffff;
+    --glow1:rgba(77,163,255,.14); --glow2:rgba(94,234,212,.08);
+    --shadow-card:rgba(0,0,0,.35); --shadow-modal:rgba(0,0,0,.5); --overlay:rgba(4,8,16,.72);
+    --radius:14px;
+  }
+  :root[data-theme="light"]{
+    --bg0:#eef2f8; --bg1:#ffffff; --panel:rgba(255,255,255,.8); --panel-solid:#ffffff; --panel2:#f4f7fb;
+    --border:rgba(15,23,42,.10); --text:#0f172a; --sub:#4b5875; --sub2:#72809a; --text-soft:#1e293b;
+    --surface-1:rgba(15,23,42,.02); --surface-2:rgba(15,23,42,.045); --surface-2-hover:rgba(15,23,42,.09);
+    --nav-bg:rgba(15,23,42,.035); --chip-bg:rgba(15,23,42,.06);
+    --row-hover:rgba(15,23,42,.035); --row-alt:rgba(15,23,42,.02);
+    --track-bg:rgba(15,23,42,.08); --marker:#0f172a;
+    --glow1:rgba(77,163,255,.10); --glow2:rgba(94,234,212,.10);
+    --shadow-card:rgba(15,23,42,.14); --shadow-modal:rgba(15,23,42,.25); --overlay:rgba(15,23,42,.45);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{
+    font-family:'Segoe UI',system-ui,-apple-system,Arial,sans-serif;
+    background:
+      radial-gradient(900px 500px at 85% -10%, var(--glow1), transparent 60%),
+      radial-gradient(700px 500px at -10% 20%, var(--glow2), transparent 60%),
+      linear-gradient(180deg,var(--bg0),var(--bg1) 40%, var(--bg0));
+    color:var(--text); min-height:100vh;
+    transition:background .25s, color .25s;
+  }
+  a{color:var(--accent);}
+  .app{max-width:1320px;margin:0 auto;}
+
+  /* Topbar */
+  .topbar{
+    display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;
+    padding:20px 28px;border-bottom:1px solid var(--border);
+    background:var(--surface-1); position:sticky; top:0; z-index:40; backdrop-filter:blur(10px);
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand-mark{
+    width:42px;height:42px;border-radius:11px;display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,var(--accent),var(--mint)); color:#06111f; font-weight:800; font-size:15px;
+    box-shadow:0 6px 18px rgba(77,163,255,.35);
+    flex-shrink:0;
+  }
+  .brand-text h1{margin:0;font-size:17px;font-weight:700;letter-spacing:.2px;}
+  .brand-text .sub{font-size:11.5px;color:var(--sub);margin-top:2px;}
+  .topbar-meta{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+  .live-badge{
+    display:inline-flex;align-items:center;gap:6px;background:rgba(52,211,153,.12);color:var(--ok);
+    border:1px solid rgba(52,211,153,.35);border-radius:20px;padding:5px 12px;font-size:11.5px;font-weight:600;
+  }
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 0 rgba(52,211,153,.6);animation:pulse 1.8s infinite;}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(52,211,153,.55);}70%{box-shadow:0 0 0 7px rgba(52,211,153,0);}100%{box-shadow:0 0 0 0 rgba(52,211,153,0);}}
+  .btn{
+    border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+    padding:8px 14px;border-radius:9px;font-size:12.5px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;
+    transition:.15s;
+  }
+  .btn:hover{background:var(--surface-2-hover);border-color:var(--border);}
+
+  /* Theme toggle switch */
+  .theme-switch{
+    position:relative;width:52px;height:27px;border-radius:20px;background:var(--track-bg);
+    border:1px solid var(--border);cursor:pointer;display:flex;align-items:center;padding:0 6px;
+    justify-content:space-between;flex-shrink:0;
+  }
+  .theme-switch .ts-icon{font-size:11px;line-height:1;position:relative;z-index:1;filter:grayscale(.15);}
+  .theme-switch .ts-knob{
+    position:absolute;width:21px;height:21px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--mint));
+    top:2px;left:2px;transition:left .25s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  :root[data-theme="light"] .theme-switch .ts-knob{left:27px;background:linear-gradient(135deg,var(--amber),#fb923c);}
+
+  /* Nav */
+  nav{display:flex;gap:6px;padding:0 22px;border-bottom:1px solid var(--border);background:var(--nav-bg);overflow-x:auto;position:sticky;top:77px;z-index:35;backdrop-filter:blur(10px);}
+  nav button{
+    background:none;border:none;color:var(--sub);padding:13px 16px;font-size:13.5px;cursor:pointer;
+    border-bottom:2px solid transparent;white-space:nowrap;font-weight:600;display:flex;align-items:center;gap:7px;
+    transition:.15s;
+  }
+  nav button svg{width:15px;height:15px;opacity:.8;}
+  nav button.active{color:var(--text);border-bottom-color:var(--accent);}
+  nav button:hover{color:var(--text);}
+
+  main{padding:26px 28px 70px;}
+  .view{display:none;}
+  .view.active{display:block;animation:fadeUp .35s ease;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+  .grid{display:grid;gap:16px;}
+  .grid-4{grid-template-columns:repeat(4,1fr);}
+  .grid-3{grid-template-columns:repeat(3,1fr);}
+  .grid-2{grid-template-columns:repeat(2,1fr);}
+  @media(max-width:1000px){.grid-4{grid-template-columns:repeat(2,1fr);}.grid-3{grid-template-columns:repeat(2,1fr);}.grid-2{grid-template-columns:1fr;}}
+  @media(max-width:600px){.grid-4{grid-template-columns:1fr;}.grid-3{grid-template-columns:1fr;}}
+
+  .card{
+    background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:17px 19px;
+    backdrop-filter:blur(6px);
+  }
+  .kpi{position:relative;transition:.18s;}
+  .kpi[data-modal]{cursor:pointer;}
+  .kpi[data-modal]:hover{transform:translateY(-2px);border-color:rgba(77,163,255,.4);box-shadow:0 10px 26px var(--shadow-card);}
+  .kpi .info-dot{
+    position:absolute;top:12px;right:12px;width:18px;height:18px;border-radius:50%;
+    background:var(--chip-bg);color:var(--sub);font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:700;
+  }
+  .kpi .label{font-size:11.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .kpi .value{font-size:25px;font-weight:800;margin-top:8px;font-variant-numeric:tabular-nums;}
+  .kpi .sub{font-size:11.5px;color:var(--sub2);margin-top:5px;line-height:1.4;}
+
+  .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;}
+  .ok{background:var(--ok);} .warn{background:var(--warn);} .crit{background:var(--crit);}
+  .tag-ok{color:var(--ok);} .tag-warn{color:var(--warn);} .tag-crit{color:var(--crit);}
+
+  h2.section{font-size:13.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.07em;margin:32px 0 13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+  h2.section::before{content:'';width:3px;height:13px;background:var(--accent);border-radius:2px;display:inline-block;}
+  .chart-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:16px;backdrop-filter:blur(6px);}
+  .chart-card h3{margin:0 0 14px;font-size:14px;font-weight:700;}
+  .chart-card .hint{font-size:11.5px;color:var(--sub2);margin-top:2px;margin-bottom:14px;}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:10px 11px;border-bottom:1px solid var(--border);}
+  th{color:var(--sub);font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;}
+  tbody tr:nth-child(odd){background:var(--row-alt);}
+  tr:hover td{background:var(--row-hover);}
+  .mono{font-family:'SF Mono',Consolas,monospace;}
+
+  .pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.02em;}
+  .pill-ok{background:rgba(52,211,153,.15);color:var(--ok);}
+  .pill-warn{background:rgba(251,191,36,.15);color:var(--warn);}
+  .pill-crit{background:rgba(248,113,113,.15);color:var(--crit);}
+
+  .server-title{font-size:19px;font-weight:800;margin-bottom:3px;letter-spacing:.2px;}
+  .server-sub{font-size:12.5px;color:var(--sub);margin-bottom:20px;}
+
+  .rec-item{background:var(--panel2);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:15px 17px;margin-bottom:12px;}
+  .rec-item.p-high{border-left-color:var(--crit);}
+  .rec-item.p-med{border-left-color:var(--warn);}
+  .rec-item.p-low{border-left-color:var(--ok);}
+  .rec-item .rec-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;gap:10px;flex-wrap:wrap;}
+  .rec-item .rec-title{font-weight:700;font-size:13.5px;}
+  .rec-item p{margin:0;font-size:13px;color:var(--sub);line-height:1.6;}
+  .rec-status{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+  .rec-status button{
+    font-size:11px;padding:4px 11px;border-radius:20px;border:1px solid var(--border);
+    background:transparent;color:var(--sub2);cursor:pointer;font-weight:700;transition:.15s;
+  }
+  .rec-status button:hover{border-color:var(--accent);color:var(--text);}
+  .rec-status button.active[data-status="open"]{background:rgba(248,113,113,.15);color:var(--crit);border-color:transparent;}
+  .rec-status button.active[data-status="progress"]{background:rgba(251,191,36,.15);color:var(--warn);border-color:transparent;}
+  .rec-status button.active[data-status="resolved"]{background:rgba(52,211,153,.15);color:var(--ok);border-color:transparent;}
+  #recStatusSummary{font-size:12.5px;margin-bottom:16px;}
+
+  .prose{font-size:13.5px;color:var(--text-soft);line-height:1.8;}
+  .prose p{margin:0 0 13px;}
+  .exec-box{
+    background:linear-gradient(135deg,rgba(77,163,255,.08),rgba(94,234,212,.05));
+    border:1px solid rgba(77,163,255,.25);border-radius:var(--radius);padding:18px 20px;margin-bottom:18px;
+  }
+  .exec-box .exec-title{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent);font-weight:700;margin-bottom:10px;}
+  .exec-list{display:flex;flex-direction:column;gap:8px;}
+  .exec-list li{list-style:none;font-size:13.5px;color:var(--text-soft);display:flex;gap:9px;align-items:flex-start;}
+
+  details.more{margin-top:12px;}
+  details.more summary{
+    cursor:pointer;font-size:12px;color:var(--accent);font-weight:700;list-style:none;
+    display:inline-flex;align-items:center;gap:5px;user-select:none;
+  }
+  details.more summary::-webkit-details-marker{display:none;}
+  details.more summary::before{content:'+';font-size:13px;line-height:1;}
+  details.more[open] summary::before{content:'–';}
+  details.more .details-body{margin-top:10px;font-size:12.5px;color:var(--sub);line-height:1.65;padding-left:2px;border-left:2px solid var(--border);padding-left:12px;}
+  details.more .details-body.prose p{margin:0 0 10px;}
+  details.more .details-body.prose p:last-child{margin-bottom:0;}
+  @media print{ details.more summary{ display:none !important; } }
+
+  footer{text-align:center;color:var(--sub2);font-size:11.5px;padding:26px;border-top:1px solid var(--border);margin-top:10px;}
+
+  /* Hero / health score */
+  .hero{display:flex;gap:26px;align-items:center;background:var(--panel);border:1px solid var(--border);border-radius:18px;padding:24px 26px;margin-bottom:24px;flex-wrap:wrap;backdrop-filter:blur(6px);}
+  .ring{width:118px;height:118px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;}
+  .ring .ring-hole{width:88px;height:88px;border-radius:50%;background:var(--panel-solid);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .ring .ring-hole .num{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .ring .ring-hole .lbl{font-size:10px;color:var(--sub);text-transform:uppercase;letter-spacing:.04em;}
+  .hero-text{flex:1;min-width:220px;}
+  .hero-text h2{margin:0 0 6px;font-size:16px;font-weight:800;}
+  .hero-text p{margin:0;font-size:13px;color:var(--sub);line-height:1.6;}
+  .hero-stats{display:flex;gap:22px;flex-wrap:wrap;}
+  .hero-stat{text-align:left;}
+  .hero-stat .n{font-size:19px;font-weight:800;}
+  .hero-stat .l{font-size:11px;color:var(--sub2);text-transform:uppercase;letter-spacing:.04em;}
+
+  /* comparison bars */
+  .cmp-metric{margin-bottom:18px;}
+  .cmp-metric:last-child{margin-bottom:0;}
+  .cmp-metric-title{font-size:12.5px;font-weight:700;color:var(--text-soft);margin-bottom:9px;}
+  .cmp-bar-row{display:grid;grid-template-columns:118px 1fr 78px;align-items:center;gap:10px;margin-bottom:6px;}
+  .cmp-name{font-size:12px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cmp-track{height:9px;border-radius:6px;background:var(--track-bg);overflow:hidden;}
+  .cmp-fill{height:100%;border-radius:6px;width:0;transition:width 1s cubic-bezier(.2,.9,.2,1);}
+  .cmp-val{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text-soft);}
+
+  /* capacity watch */
+  .cap-row{margin-bottom:20px;}
+  .cap-row:last-child{margin-bottom:0;}
+  .cap-name{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:700;margin-bottom:8px;}
+  .cap-track{position:relative;height:14px;border-radius:8px;background:var(--track-bg);overflow:hidden;}
+  .cap-zone{position:absolute;top:0;bottom:0;}
+  .cap-fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;width:0;transition:width 1.1s cubic-bezier(.2,.9,.2,1);}
+  .cap-max-marker{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--marker);opacity:.85;}
+  .cap-values{display:flex;justify-content:space-between;font-size:11.5px;color:var(--sub2);margin-top:7px;}
+
+  /* range bars (server metric detail) */
+  .range-row{margin-bottom:30px;}
+  .range-row:last-child{margin-bottom:0;}
+  .range-label{font-size:12.5px;font-weight:700;color:var(--text-soft);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
+  .range-track{position:relative;height:8px;border-radius:6px;background:var(--track-bg);overflow:visible;}
+  .range-zone{position:absolute;top:0;bottom:0;}
+  .range-zone:first-child{border-radius:0;}
+  .range-fill{position:absolute;top:0;bottom:0;border-radius:6px;opacity:0;transition:opacity .6s, left 1s, width 1s;}
+  .range-dot{
+    position:absolute;top:50%;width:9px;height:9px;border-radius:50%;
+    background:var(--panel-solid);border:2px solid var(--sub2);
+    transform:translate(-50%,-50%);box-sizing:border-box;
+  }
+  .range-avg-dot{
+    position:absolute;top:50%;width:13px;height:13px;border-radius:50%;
+    transform:translate(-50%,-50%);border:2.5px solid var(--panel-solid);
+    box-shadow:0 0 0 1.5px var(--border), 0 2px 5px rgba(0,0,0,.25);
+  }
+  .range-scale{display:flex;justify-content:space-between;margin-top:9px;font-size:10px;color:var(--sub2);}
+  .range-values{display:flex;justify-content:space-between;font-size:11.5px;color:var(--sub2);margin-top:9px;}
+  .range-values .rv{display:inline-flex;align-items:center;gap:5px;}
+  .range-values b{color:var(--sub);}
+  .rv-swatch{width:8px;height:8px;border-radius:50%;display:inline-block;box-sizing:border-box;}
+
+  /* donut via conic-gradient */
+  .donut-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+  .donut{width:150px;height:150px;border-radius:50%;flex-shrink:0;position:relative;}
+  .donut .hole{position:absolute;inset:24px;border-radius:50%;background:var(--panel-solid);display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .donut .hole .n{font-size:20px;font-weight:800;}
+  .donut .hole .l{font-size:10px;color:var(--sub);}
+  .legend-list{display:flex;flex-direction:column;gap:10px;}
+  .legend-item{display:flex;align-items:center;gap:9px;font-size:13px;}
+  .legend-swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+
+  .stat-big{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px 10px;text-align:center;}
+  .stat-big .n{font-size:38px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .stat-big .l{font-size:12px;color:var(--sub);margin-top:6px;}
+
+  /* modal */
+  .modal-overlay{
+    position:fixed;inset:0;background:var(--overlay);display:flex;align-items:center;justify-content:center;
+    opacity:0;pointer-events:none;transition:opacity .18s;z-index:100;padding:20px;backdrop-filter:blur(3px);
+  }
+  .modal-overlay.open{opacity:1;pointer-events:auto;}
+  .modal-box{
+    background:var(--panel-solid);border:1px solid var(--border);border-radius:16px;max-width:480px;width:100%;
+    padding:26px 26px 24px;position:relative;box-shadow:0 30px 70px var(--shadow-modal);transform:translateY(10px);transition:transform .18s;
+  }
+  .modal-overlay.open .modal-box{transform:translateY(0);}
+  .modal-close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--sub);font-size:20px;cursor:pointer;line-height:1;}
+  .modal-close:hover{color:var(--text);}
+  .modal-box h3{margin:0 0 12px;font-size:16.5px;font-weight:800;padding-right:20px;}
+  .modal-box .modal-body{font-size:13.5px;color:var(--text-soft);line-height:1.7;}
+  .modal-box .modal-body p{margin:0 0 10px;}
+  .modal-box .modal-body ul{margin:0 0 10px;padding-left:18px;}
+
+  .print-only{display:none;}
+  .view-print-title{display:none;}
+  @page{margin:16mm 14mm;}
+  @media print{
+    :root, :root[data-theme="dark"], :root[data-theme="light"]{
+      --bg0:#ffffff; --bg1:#ffffff; --panel:#ffffff; --panel-solid:#ffffff; --panel2:#f7f9fc;
+      --border:#d7dde6; --text:#0f172a; --sub:#3d4b63; --sub2:#5c6b84; --text-soft:#1e293b;
+      --track-bg:#e7ebf1; --marker:#0f172a;
+    }
+    nav, .topbar-actions, .modal-overlay, .kpi .info-dot, .theme-switch, .rec-status{display:none !important;}
+    body{background:#fff !important;color:#000;}
+    .topbar{position:static;box-shadow:none;}
+    .hero .ring{cursor:default;}
+    .print-only{display:block !important;}
+    .print-cover{padding:10mm 0 14mm;border-bottom:2px solid #0f172a;margin-bottom:14mm;}
+    .print-cover h1{font-size:22px;margin:0 0 6px;}
+    .print-cover p{font-size:12px;color:#3d4b63;margin:2px 0;}
+    .view{display:block !important;page-break-after:always;}
+    .view:last-of-type{page-break-after:auto;}
+    .card,.chart-card,.rec-item,.kpi{border-color:#d7dde6;background:#fafcfe;box-shadow:none !important;page-break-inside:avoid;}
+    .view-print-title{display:block !important;font-size:11px;color:#5c6b84;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;border-bottom:1px solid #d7dde6;padding-bottom:8px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="print-only print-cover">
+  <h1>Daewoo E&amp;C Vina — Infrastructure &amp; Security Report</h1>
+  <p>TechValley · CMC Cloud &nbsp;|&nbsp; Reporting Period: 1–30 June 2026 &nbsp;|&nbsp; Generated 2 July 2026</p>
+  <p>Confidential — prepared for Daewoo E&amp;C Vina. Contains internal infrastructure and security detail; do not redistribute outside authorized recipients.</p>
+</div>
+
+<div class="app">
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">TV</div>
+    <div class="brand-text">
+      <h1>Daewoo E&amp;C Vina — Infrastructure &amp; Security Dashboard</h1>
+      <div class="sub">TechValley · CMC Cloud &nbsp;|&nbsp; Reporting Period: 1–30 June 2026</div>
+    </div>
+  </div>
+  <div class="topbar-meta">
+    <span class="live-badge"><span class="live-dot"></span> Interactive Report</span>
+    <span class="topbar-actions" style="display:flex;align-items:center;gap:10px;">
+      <button class="theme-switch" id="themeToggle" title="Toggle light / dark theme" aria-label="Toggle light and dark theme">
+        <span class="ts-icon ts-sun">☀️</span>
+        <span class="ts-knob"></span>
+        <span class="ts-icon ts-moon">🌙</span>
+      </button>
+      <button class="btn" onclick="window.print()">⤓ Export / Print</button>
+    </span>
+  </div>
+</header>
+
+<nav id="tabs" role="tablist" aria-label="Dashboard sections">
+  <button data-view="overview" class="active" id="tab-overview" role="tab" aria-selected="true" aria-controls="view-overview">Overview</button>
+  <button data-view="boatcon" id="tab-boatcon" role="tab" aria-selected="false" aria-controls="view-boatcon">web.boatcon</button>
+  <button data-view="boatnet" id="tab-boatnet" role="tab" aria-selected="false" aria-controls="view-boatnet">web.boatnet</button>
+  <button data-view="boatsale" id="tab-boatsale" role="tab" aria-selected="false" aria-controls="view-boatsale">web.boatsale</button>
+  <button data-view="security" id="tab-security" role="tab" aria-selected="false" aria-controls="view-security">Security</button>
+  <button data-view="analysis" id="tab-analysis" role="tab" aria-selected="false" aria-controls="view-analysis">Analysis &amp; Recommendations</button>
+</nav>
+
+<main>
+
+<!-- OVERVIEW -->
+<div class="view active" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+  <div class="view-print-title">Daewoo E&amp;C Vina — Overview — June 2026</div>
+
+  <div class="hero">
+    <div class="ring" data-modal="healthScore" style="background:conic-gradient(var(--mint) 0% 95%, var(--track-bg) 95% 100%);">
+      <div class="ring-hole"><div class="num">95</div><div class="lbl">Excellent</div></div>
+    </div>
+    <div class="hero-text">
+      <h2>Overall Infrastructure &amp; Security Health — <span style="color:var(--mint)">95 / 100</span></h2>
+      <p>Performance 91/100 &nbsp;+&nbsp; Security 98/100, averaged.</p>
+    </div>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="n">3</div><div class="l">Servers</div></div>
+      <div class="hero-stat"><div class="n" style="color:var(--warn)">1</div><div class="l">Watch item</div></div>
+      <div class="hero-stat"><div class="n" style="color:var(--ok)">0</div><div class="l">Critical issues</div></div>
+      <div class="hero-stat"><div class="n" style="color:var(--ok)">99.99%</div><div class="l">Attacks blocked</div></div>
+    </div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card kpi" data-modal="serversMonitored">
+      <span class="info-dot">i</span>
+      <div class="label">Servers Monitored</div>
+      <div class="value">3</div>
+      <div class="sub">boatcon · boatnet · boatsale</div>
+    </div>
+    <div class="card kpi" data-modal="healthStatus">
+      <span class="info-dot">i</span>
+      <div class="label">Health Status</div>
+      <div class="value"><span class="status-dot warn"></span>1 Warning</div>
+      <div class="sub">web.boatnet — disk capacity &amp; traffic spikes</div>
+    </div>
+    <div class="card kpi" data-modal="criticalIssues">
+      <span class="info-dot">i</span>
+      <div class="label">Critical Issues</div>
+      <div class="value">0</div>
+      <div class="sub">No service-impacting incidents recorded</div>
+    </div>
+  </div>
+
+  <h2 class="section">Server Status Summary</h2>
+  <div class="chart-card">
+    <table>
+      <thead><tr><th>Server</th><th>CPU Avg / Max</th><th>MEM Avg / Max</th><th>Disk (FS) Avg / Max</th><th>Load Avg / Max</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td>web.boatcon.daewooencvina.vn (10.10.100.10)</td><td>5.33% / 5.63%</td><td>33.67% / 41.76%</td><td>37.77% / 39.02%</td><td>0.22 / 0.45</td><td><span class="pill pill-ok">Healthy</span></td></tr>
+        <tr><td>web.boatnet.daewooencvina.vn (10.10.200.11)</td><td>1.10% / 57.88%</td><td>42.18% / 58.98%</td><td>77.46% / 86.98%</td><td>0.07 / 3.57</td><td><span class="pill pill-warn">Attention</span></td></tr>
+        <tr><td>web.boatsale.daewooencvina.vn (42.96.58.89)</td><td>0.72% / 3.40%</td><td>56.93% / 60.30%</td><td>12.58% / 12.87%</td><td>0.02 / 0.26</td><td><span class="pill pill-ok">Healthy</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="section">Average Utilization Comparison</h2>
+  <div class="chart-card">
+    <div class="hint">Average value per metric across the three servers, normalized to a common scale.</div>
+    <div id="cmpChart"></div>
+    <div style="display:flex;gap:18px;margin-top:14px;flex-wrap:wrap;">
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--c-boatcon)"></span>web.boatcon</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--c-boatnet)"></span>web.boatnet</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--c-boatsale)"></span>web.boatsale</span>
+    </div>
+  </div>
+
+  <h2 class="section">Filesystem Usage — Capacity Watch</h2>
+  <div class="chart-card">
+    <div class="hint">Solid bar = average usage this month · white marker = peak (max) usage · shaded zones = warning (75%) / critical (90%) thresholds.</div>
+    <div id="capChart"></div>
+  </div>
+
+  <h2 class="section">Security Snapshot (UWSS — June 2026)</h2>
+  <div class="grid grid-4">
+    <div class="card kpi" data-modal="secAttacks">
+      <span class="info-dot">i</span>
+      <div class="label">Attacks Blocked</div>
+      <div class="value">35,367</div>
+      <div class="sub">99.99% block rate · +4,942 vs. May</div>
+    </div>
+    <div class="card kpi" data-modal="secTarget">
+      <span class="info-dot">i</span>
+      <div class="label">Top Attack Target</div>
+      <div class="value">web.boatsale</div>
+      <div class="sub">35,120 of all attacks (42.96.58.89)</div>
+    </div>
+    <div class="card kpi" data-modal="secWebshell">
+      <span class="info-dot">i</span>
+      <div class="label">Webshells Found</div>
+      <div class="value"><span class="status-dot ok"></span>0</div>
+      <div class="sub">775 files scanned — clean</div>
+    </div>
+    <div class="card kpi" data-modal="secMalware">
+      <span class="info-dot">i</span>
+      <div class="label">Malware Detected</div>
+      <div class="value"><span class="status-dot ok"></span>0</div>
+      <div class="sub">31 URLs scanned daily — clean</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--sub2);margin-top:10px;">Click any card above for a plain-English explanation, or open the <b>Security</b> tab for the full breakdown.</p>
+</div>
+
+<!-- SERVER TEMPLATE (repeated x3) -->
+<div class="view" id="view-boatcon" role="tabpanel" aria-labelledby="tab-boatcon" tabindex="0">
+  <div class="server-title">web.boatcon.daewooencvina.vn</div>
+  <div class="server-sub">IP 10.10.100.10 &nbsp;·&nbsp; Role: Construction Site Web Portal &nbsp;·&nbsp; Status: <span class="tag-ok">Healthy</span></div>
+  <div class="grid grid-4" id="kpi-boatcon"></div>
+  <div class="chart-card" style="margin-top:22px;"><h3>Min / Avg / Max by Metric</h3><div class="hint">Amber/red bands = warning &amp; critical thresholds · hollow dots = min &amp; max · filled dot = average.</div><div id="range-boatcon"></div></div>
+</div>
+
+<div class="view" id="view-boatnet" role="tabpanel" aria-labelledby="tab-boatnet" tabindex="0">
+  <div class="server-title">web.boatnet.daewooencvina.vn</div>
+  <div class="server-sub">IP 10.10.200.11 &nbsp;·&nbsp; Role: Network/Internal Web Service &nbsp;·&nbsp; Status: <span class="tag-warn">Needs Attention</span></div>
+  <div class="grid grid-4" id="kpi-boatnet"></div>
+  <div class="chart-card" style="margin-top:22px;"><h3>Min / Avg / Max by Metric</h3><div class="hint">Amber/red bands = warning &amp; critical thresholds · hollow dots = min &amp; max · filled dot = average.</div><div id="range-boatnet"></div></div>
+</div>
+
+<div class="view" id="view-boatsale" role="tabpanel" aria-labelledby="tab-boatsale" tabindex="0">
+  <div class="server-title">web.boatsale.daewooencvina.vn</div>
+  <div class="server-sub">IP 42.96.58.89 &nbsp;·&nbsp; Role: Public Sales Web Portal &nbsp;·&nbsp; Status: <span class="tag-ok">Healthy</span></div>
+  <div class="grid grid-4" id="kpi-boatsale"></div>
+  <div class="chart-card" style="margin-top:22px;"><h3>Min / Avg / Max by Metric</h3><div class="hint">Amber/red bands = warning &amp; critical thresholds · hollow dots = min &amp; max · filled dot = average.</div><div id="range-boatsale"></div></div>
+</div>
+
+<!-- SECURITY -->
+<div class="view" id="view-security" role="tabpanel" aria-labelledby="tab-security" tabindex="0">
+  <div class="server-title">UWSS Unified Web Security Service</div>
+  <div class="server-sub">WEBCastle (Web Firewall) · WSFinder (Webshell Detection) · WMDS (Malware Distribution Detection) &nbsp;·&nbsp; 1 server / 11 domains managed &nbsp;·&nbsp; Period: 1–30 June 2026</div>
+
+  <div class="grid grid-4">
+    <div class="card kpi">
+      <div class="label">Total Attacks Blocked</div>
+      <div class="value">35,367</div>
+      <div class="sub">35,365 blocked · 2 detected only</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">vs. Last Month</div>
+      <div class="value">+4,942</div>
+      <div class="sub">Highest month in the last 6</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Peak Day</div>
+      <div class="value">Jun 1</div>
+      <div class="sub">12,370 attacks blocked in a single day</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Peak Week</div>
+      <div class="value">Jun 1–7</div>
+      <div class="sub">17,304 detected / 17,302 blocked</div>
+    </div>
+  </div>
+
+  <h2 class="section">6-Month Attack Volume Trend</h2>
+  <div class="chart-card">
+    <div class="hint">Approximate monthly totals, read from the trend chart in the source UWSS report (Jan–Jul 2026). Exact daily figures weren't extractable as text — treat these as directional, not precise.</div>
+    <div id="monthTrendChart"></div>
+  </div>
+
+  <h2 class="section">Attack Types (WEBCastle)</h2>
+  <div class="chart-card">
+    <div id="attackTypeChart"></div>
+  </div>
+
+  <div class="grid grid-2">
+    <div class="chart-card">
+      <h3>Risk Level of Detected Attacks</h3>
+      <div class="donut-wrap">
+        <div class="donut" style="background:conic-gradient(var(--crit) 0% 37.7%, var(--warn) 37.7% 100%);">
+          <div class="hole"><div class="n">35,367</div><div class="l">total events</div></div>
+        </div>
+        <div class="legend-list">
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--crit)"></span>High — 13,326 (37.7%)</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:var(--warn)"></span>Medium — 22,041 (62.3%)</div>
+        </div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>OWASP Top 10 Classification</h3>
+      <div class="stat-big">
+        <div class="n" style="color:var(--accent)">~100%</div>
+        <div class="l">of classified attacks fall under <b>A04: Insecure Design</b></div>
+      </div>
+      <p style="font-size:12px;color:var(--sub2);margin-top:6px;">Consistent with broad automated scanning rather than a targeted exploit against one specific known bug.</p>
+    </div>
+  </div>
+
+  <h2 class="section">Top 5 Attacker IPs &amp; Top 5 Targets</h2>
+  <div class="chart-card">
+    <table>
+      <thead><tr><th>#</th><th>Attacker IP</th><th>Count</th><th>#</th><th>Target</th><th>Count</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td class="mono">185.177.72.17</td><td>3,020</td><td>1</td><td>web.boatsale (42.96.58.89)</td><td>35,120</td></tr>
+        <tr><td>2</td><td class="mono">185.177.72.58</td><td>3,020</td><td>2</td><td>10.1.10.10</td><td>200</td></tr>
+        <tr><td>3</td><td class="mono">185.177.72.53</td><td>3,010</td><td>3</td><td>192.0.2.1</td><td>10</td></tr>
+        <tr><td>4</td><td class="mono">185.177.72.205</td><td>3,000</td><td>4</td><td>daewooencvina.vn (root domain)</td><td>10</td></tr>
+        <tr><td>5</td><td class="mono">185.177.72.49</td><td>3,000</td><td>5</td><td>146.56.180.42</td><td>10</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--sub2);margin-top:12px;">All top-5 attacker IPs sit inside the same <strong>185.177.72.0/24</strong> block, each generating ~3,000 hits — a strong signature of a single coordinated scanning source rather than 5 unrelated attackers. Almost every attack (35,120 of 35,367) targeted the public-facing <strong>web.boatsale</strong> portal.</p>
+  </div>
+
+  <h2 class="section">Webshell (WSFinder) &amp; Malware (WMDS) Scanning</h2>
+  <div class="grid grid-2">
+    <div class="chart-card">
+      <h3>Webshell Detection</h3>
+      <div class="grid grid-3" style="gap:10px;">
+        <div class="stat-big" style="padding:10px;"><div class="n" style="font-size:26px;">775</div><div class="l">Files scanned</div></div>
+        <div class="stat-big" style="padding:10px;"><div class="n" style="font-size:26px;color:var(--ok)">0</div><div class="l">Webshells found</div></div>
+        <div class="stat-big" style="padding:10px;"><div class="n" style="font-size:26px;color:var(--ok)">0</div><div class="l">Quarantined</div></div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>Malware Distribution Detection</h3>
+      <div class="grid grid-3" style="gap:10px;">
+        <div class="stat-big" style="padding:10px;"><div class="n" style="font-size:26px;">31</div><div class="l">URLs scanned / day</div></div>
+        <div class="stat-big" style="padding:10px;"><div class="n" style="font-size:26px;color:var(--ok)">0</div><div class="l">Malware found</div></div>
+        <div class="stat-big" style="padding:10px;"><div class="n" style="font-size:26px;color:var(--warn)">25</div><div class="l">URLs flagged (mostly timeouts)</div></div>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="section">Threat Origin (6-month cumulative)</h2>
+  <div class="chart-card">
+    <table>
+      <thead><tr><th>Rank</th><th>Country</th><th>Attack Count</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td>🇫🇷 France</td><td>35,567</td></tr>
+        <tr><td>2</td><td>🇺🇸 United States</td><td>9,047</td></tr>
+        <tr><td>3</td><td>🇨🇳 China</td><td>1,963</td></tr>
+        <tr><td>4</td><td>🇳🇱 Netherlands</td><td>1,927</td></tr>
+        <tr><td>5</td><td>🇯🇵 Japan</td><td>1,547</td></tr>
+        <tr><td>6</td><td>Other</td><td>11,930</td></tr>
+        <tr><td colspan="2"><strong>Total (6 months)</strong></td><td><strong>61,981</strong></td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--sub2);margin-top:10px;">France's outsized share likely reflects proxy/hosting IP ranges rather than genuine French traffic — the 185.177.72.0/24 attacker block seen above is a plausible contributor.</p>
+  </div>
+</div>
+
+<!-- ANALYSIS -->
+<div class="view" id="view-analysis" role="tabpanel" aria-labelledby="tab-analysis" tabindex="0">
+  <div class="view-print-title">Daewoo E&amp;C Vina — Analysis &amp; Recommendations — June 2026</div>
+  <h2 class="section" style="margin-top:0">Executive Summary</h2>
+  <div class="exec-box">
+    <div class="exec-title">Bottom line — June 2026</div>
+    <p style="font-size:15.5px;font-weight:700;color:var(--text);margin:0 0 14px;line-height:1.5;">No downtime. No security breaches. One action needed: expand storage on web.boatnet within 30 days.</p>
+    <ul class="exec-list">
+      <li>✅ <span>All 3 servers stayed within safe performance limits all month.</span></li>
+      <li>⚠️ <span><b>web.boatnet</b> disk usage peaked at 87% — the one item needing action.</span></li>
+      <li>🛡️ <span>Firewall blocked 35,367 attacks (99.99%) — zero breaches, highest volume in 6 months.</span></li>
+      <li>✅ <span>Webshell &amp; malware scans came back completely clean.</span></li>
+    </ul>
+  </div>
+
+  <div id="recStatusSummary"></div>
+
+  <h2 class="section">Performance — Key Findings</h2>
+  <div class="chart-card">
+    <ul class="exec-list" style="margin-bottom:2px;">
+      <li>✅ <span><b>web.boatcon</b> — Healthy, plenty of spare capacity.</span></li>
+      <li>⚠️ <span><b>web.boatnet</b> — Disk nearing capacity (87% peak). A brief CPU/network spike looks like a scheduled job, not an incident.</span></li>
+      <li>✅ <span><b>web.boatsale</b> — Healthy; memory is the highest of the three, worth watching as traffic grows.</span></li>
+    </ul>
+    <details class="more">
+      <summary>Read the full technical analysis</summary>
+      <div class="details-body prose">
+        <p><strong>Overall, the three Daewoo E&amp;C Vina web servers hosted on TechValley / CMC Cloud operated within safe limits throughout June 2026</strong>, with no downtime-causing incidents recorded in the monitoring data. CPU, memory and load metrics stayed comfortably below critical thresholds on all hosts for the majority of the month.</p>
+        <p><strong>web.boatcon</strong> (construction site portal) showed the lightest and most stable load of the three: CPU averaged 5.33% (peak 5.63%), memory 33.67% (peak 41.76%), and disk usage a steady ~38%. This host has significant spare capacity.</p>
+        <p><strong>web.boatnet</strong> is the outlier and the main point requiring attention. Filesystem usage averaged 77.46% and peaked at 86.98% — this is approaching the 80–90% range where write failures, log-rotation issues, or database/application errors typically begin to appear. In addition, this host showed a sharp CPU spike (57.88% vs. a 1.10% average) and a large outbound traffic burst (185.11 Mbps vs. a 954 kbps average) occurring well outside its normal baseline. The combination of a CPU spike, network burst, and disk-IO spike (10.75% vs. 0.08% avg) in the same dataset is consistent with a scheduled batch job, backup/replication run, or a large file transfer — not a chronic overload — but it should be confirmed and scheduled outside business-critical hours if not already.</p>
+        <p><strong>web.boatsale</strong> (public sales portal) ran with healthy headroom: CPU under 3.5%, memory around 57%, and only 12.6% filesystem usage — the most disk headroom of the three servers, but the highest average memory utilization, worth tracking as traffic grows.</p>
+        <p>No server exceeded CPU, memory or load thresholds on a sustained basis, and all "Max" spikes observed were short-duration (1-hour average bucket) events rather than persistent saturation.</p>
+      </div>
+    </details>
+  </div>
+
+  <h2 class="section">Performance Recommendations</h2>
+
+  <div class="rec-item p-high">
+    <div class="rec-head"><span class="rec-title">1. Expand or clean up disk capacity on web.boatnet</span><span class="pill pill-crit">High Priority</span></div>
+    <p>Disk peaked at 87% this month — expand storage or clean up logs before it fills.</p>
+    <details class="more"><summary>Why</summary><div class="details-body">Filesystem usage peaked at 86.98% (avg 77.46%). Recommend increasing the volume size, archiving/rotating old logs, or offloading static assets within the next billing cycle to avoid disk-full incidents.</div></details>
+  </div>
+  <div class="rec-item p-med">
+    <div class="rec-head"><span class="rec-title">2. Investigate the CPU / network / disk-IO spike on web.boatnet</span><span class="pill pill-warn">Medium Priority</span></div>
+    <p>A short, sharp spike looks like a scheduled job — confirm it isn't overlapping business hours.</p>
+    <details class="more"><summary>Why</summary><div class="details-body">Correlated spike: CPU 57.88%, outbound traffic 185.11 Mbps, disk IO 10.75% — consistent with a batch job, backup, or large transfer.</div></details>
+  </div>
+  <div class="rec-item p-med">
+    <div class="rec-head"><span class="rec-title">3. Monitor memory trend on web.boatsale</span><span class="pill pill-warn">Medium Priority</span></div>
+    <p>Highest memory usage of the three servers (57% avg) — track monthly as traffic grows.</p>
+    <details class="more"><summary>Why</summary><div class="details-body">Peak 60.30%; least memory headroom relative to its own baseline of the three hosts. Not urgent today.</div></details>
+  </div>
+  <div class="rec-item p-low">
+    <div class="rec-head"><span class="rec-title">4. web.boatcon has spare capacity</span><span class="pill pill-ok">Low Priority / Informational</span></div>
+    <p>All metrics well below thresholds — room to absorb more workload if needed.</p>
+  </div>
+  <div class="rec-item p-low">
+    <div class="rec-head"><span class="rec-title">5. Continue routine monitoring</span><span class="pill pill-ok">Ongoing</span></div>
+    <p>No critical incidents this month — keep the current monitoring cadence.</p>
+  </div>
+
+  <h2 class="section">Security — Key Findings</h2>
+  <div class="chart-card">
+    <ul class="exec-list" style="margin-bottom:2px;">
+      <li>🛡️ <span>Firewall blocked 35,367 attacks (99.99%) — highest month in 6, zero confirmed breaches.</span></li>
+      <li>🎯 <span>Nearly all traffic targeted <b>web.boatsale</b> (expected — it's the public portal); the server stayed healthy throughout, confirming the firewall absorbed the load.</span></li>
+      <li>🌐 <span>Top attackers all trace to one subnet (185.177.72.0/24) — a single coordinated scanner, not five separate attackers.</span></li>
+      <li>✅ <span>Webshell &amp; malware scans came back completely clean.</span></li>
+    </ul>
+    <details class="more">
+      <summary>Read the full security analysis</summary>
+      <div class="details-body prose">
+        <p><strong>The web security service (WEBCastle, WSFinder, WMDS) performed well overall in June, blocking 35,367 attacks at a 99.99% block rate</strong> — only 2 events were detected but not auto-blocked, and none resulted in a confirmed compromise. This was the highest attack volume of the last 6 months, up 4,942 cases from May, with a sharp single-day spike of 12,370 blocked attacks on June 1 and a secondary spike near month-end.</p>
+        <p>Nearly all traffic (79.4%) was flagged as "Standard Protocol" violations and 18.6% as LFI (Local File Inclusion) attempts — both fully blocked by the firewall. Risk classification split 62.3% Medium and 37.7% High, with no Critical incidents. Under OWASP Top 10, essentially all classified attacks fall under <strong>A04: Insecure Design</strong>, which is typical of broad, automated scanning rather than a targeted campaign exploiting a specific known bug.</p>
+        <p>The attack traffic is highly concentrated: the top 5 attacker IPs all sit inside the same <strong>185.177.72.0/24</strong> block, each producing ~3,000 hits — almost certainly one coordinated scanning source, not five independent attackers. Nearly all of it (35,120 of 35,367 attacks) was aimed at the public <strong>web.boatsale</strong> portal. Cross-referencing with the performance data is reassuring: despite absorbing essentially all of this month's attack traffic, web.boatsale's CPU, memory and disk stayed low and stable all month — the firewall is filtering this traffic before it reaches the application. Correspondingly, the performance spike seen on <strong>web.boatnet</strong> is not attack-related, since that host was barely targeted at all — it reinforces the earlier conclusion that the boatnet spike was a scheduled internal job, not a security event.</p>
+        <p>Webshell scanning (WSFinder) and malware-distribution scanning (WMDS) both came back clean this month: 0 webshells across 775 scanned files, and 0 malware detections across 31 daily-scanned URLs. 25 URLs were flagged for general inspection, 80.65% of them due to timeouts — worth a quick operational check, but not indicative of a security breach.</p>
+      </div>
+    </details>
+  </div>
+
+  <h2 class="section">Security Recommendations</h2>
+
+  <div class="rec-item p-high">
+    <div class="rec-head"><span class="rec-title">6. Block or rate-limit the 185.177.72.0/24 range</span><span class="pill pill-crit">High Priority</span></div>
+    <p>One subnet drove the top 5 attacker IPs (~3,000 hits each) — block or rate-limit it at the network level.</p>
+  </div>
+  <div class="rec-item p-med">
+    <div class="rec-head"><span class="rec-title">7. Spot-check the 37.7% High-risk-classified events</span><span class="pill pill-warn">Medium Priority</span></div>
+    <p>13,326 High-risk events were all blocked — a periodic manual review keeps WAF rules current.</p>
+  </div>
+  <div class="rec-item p-med">
+    <div class="rec-head"><span class="rec-title">8. Defense-in-depth review for LFI-prone endpoints</span><span class="pill pill-warn">Medium Priority</span></div>
+    <p>LFI attempts (18.6% of attacks) were all blocked — add input validation in-app as a second layer of defense.</p>
+  </div>
+  <div class="rec-item p-low">
+    <div class="rec-head"><span class="rec-title">9. Check the 25 flagged URLs, mostly timeouts</span><span class="pill pill-ok">Low Priority</span></div>
+    <p>Mostly timeout errors, not security findings — a quick operational check is worthwhile.</p>
+  </div>
+  <div class="rec-item p-low">
+    <div class="rec-head"><span class="rec-title">10. Webshell and malware scanning are clean — maintain cadence</span><span class="pill pill-ok">Ongoing</span></div>
+    <p>0 detections this month — keep the current scan frequency.</p>
+  </div>
+</div>
+
+</main>
+<footer>TechValley Cloud Managed Services &nbsp;·&nbsp; Confidential performance &amp; security report for Daewoo E&amp;C Vina &nbsp;·&nbsp; Generated 2 July 2026</footer>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <button class="modal-close" onclick="closeModal()">&times;</button>
+    <h3 id="modalTitle"></h3>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+/* ================== 0. THEME TOGGLE — bound first ================== */
+(function(){
+  var toggleBtn = document.getElementById('themeToggle');
+  if(!toggleBtn) return;
+  toggleBtn.addEventListener('click', function(){
+    var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+    var next = cur === 'light' ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', next);
+    try{ localStorage.setItem('tv-dashboard-theme', next); }catch(e){}
+  });
+})();
+
+/* ================== 1. NAV — bound first, before anything else can throw ================== */
+var VALID_VIEWS = ['overview','boatcon','boatnet','boatsale','security','analysis'];
+
+function activateTab(viewName, opts){
+  if(VALID_VIEWS.indexOf(viewName) === -1) return;
+  var btn = document.getElementById('tab-' + viewName);
+  if(!btn) return;
+  document.querySelectorAll('#tabs button').forEach(function(b){
+    b.classList.remove('active');
+    b.setAttribute('aria-selected','false');
+  });
+  btn.classList.add('active');
+  btn.setAttribute('aria-selected','true');
+  document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+  var target = document.getElementById('view-' + viewName);
+  if(target) target.classList.add('active');
+  if(!opts || opts.updateHash !== false){
+    history.replaceState(null, '', '#' + viewName);
+  }
+  if(!opts || opts.scroll !== false){
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+}
+
+document.getElementById('tabs').addEventListener('click', function(e){
+  var btn = e.target.closest('button');
+  if(!btn) return;
+  activateTab(btn.dataset.view);
+});
+
+/* Keyboard navigation: left/right arrows move between tabs */
+document.getElementById('tabs').addEventListener('keydown', function(e){
+  if(e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+  var btn = e.target.closest('button');
+  if(!btn) return;
+  var idx = VALID_VIEWS.indexOf(btn.dataset.view);
+  if(idx === -1) return;
+  var nextIdx = e.key === 'ArrowRight' ? (idx + 1) % VALID_VIEWS.length : (idx - 1 + VALID_VIEWS.length) % VALID_VIEWS.length;
+  var nextBtn = document.getElementById('tab-' + VALID_VIEWS[nextIdx]);
+  if(nextBtn){ nextBtn.focus(); activateTab(VALID_VIEWS[nextIdx]); }
+  e.preventDefault();
+});
+
+/* Deep-linking: honor #view-name on load, and browser back/forward */
+(function initFromHash(){
+  var h = (location.hash || '').replace('#','');
+  if(VALID_VIEWS.indexOf(h) !== -1){
+    activateTab(h, {updateHash:false, scroll:false});
+  }
+})();
+window.addEventListener('hashchange', function(){
+  var h = (location.hash || '').replace('#','');
+  if(VALID_VIEWS.indexOf(h) !== -1){
+    activateTab(h, {updateHash:false});
+  }
+});
+
+/* ================== 2. MODAL ================== */
+function openModal(title, bodyHtml){
+  document.getElementById('modalTitle').innerHTML = title;
+  document.getElementById('modalBody').innerHTML = bodyHtml;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+document.getElementById('modalOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeModal();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
+
+var modalContent = {
+  healthScore: { title:'How the 95/100 score is calculated', body:
+    '<p>This is a fixed, published formula applied the same way every month — not a subjective rating — so scores are comparable over time.</p>'+
+    '<p><b>Performance: 91/100.</b> Start at 100. For each of the 15 server × metric combinations this month, subtract 3 points if that metric\'s peak value landed in the Warning zone, or 10 points if it landed in the Critical zone. web.boatnet had 3 Warning-level peaks this month (CPU 57.88%, Load Average 3.57, FileSystem 86.98%) and nothing at Critical level anywhere. 100 − (3×3) = <b>91</b>.</p>'+
+    '<p><b>Security: 98/100.</b> Start at 100. Subtract 10 points per confirmed compromise (a webshell or malware match), and 1 point per attack that was detected but not automatically blocked. This month: 0 confirmed compromises, 2 detected-not-blocked events. 100 − 2 = <b>98</b>.</p>'+
+    '<p><b>Combined score</b> is the average of the two, rounded: (91 + 98) / 2 = 94.5 → <b>95</b> — "Excellent" (90–100 = Excellent, 75–89 = Good, 60–74 = Fair, below 60 = Needs Attention).</p>' },
+  serversMonitored: { title:'Servers Monitored', body:
+    '<p>Three production web servers are actively monitored under this contract:</p><ul>'+
+    '<li><b>web.boatcon</b> — construction site portal</li>'+
+    '<li><b>web.boatnet</b> — internal/network web service</li>'+
+    '<li><b>web.boatsale</b> — public sales portal</li></ul>'+
+    '<p>Each is sampled hourly for CPU, memory, load, disk I/O, filesystem usage and outbound traffic.</p>' },
+  healthStatus: { title:'Why web.boatnet is flagged "Warning"', body:
+    '<p>web.boatnet\'s filesystem usage averaged <b>77.46%</b> and peaked at <b>86.98%</b> this month — approaching the 80–90% range where write failures, log-rotation issues, or application errors typically start to appear.</p>'+
+    '<p>It also showed a short, sharp spike in CPU, network traffic and disk I/O together, most likely a scheduled backup or batch job rather than a problem — but it\'s worth confirming. See the <b>web.boatnet</b> tab and the <b>Analysis &amp; Recommendations</b> tab for full detail.</p>' },
+  criticalIssues: { title:'Critical Issues', body:
+    '<p>A "critical" issue would be a sustained resource exhaustion (CPU, memory or disk consistently pinned near 100%) or a confirmed security breach. Neither occurred in June 2026 — all events observed were short-duration spikes or fully-blocked attack attempts.</p>' },
+  secAttacks: { title:'Attacks Blocked — 35,367', body:
+    '<p>TechValley\'s web firewall (WEBCastle) automatically inspects every request to your websites and blocks anything matching a known attack pattern — malicious code injection, scans for vulnerable software, and similar threats.</p>'+
+    '<p>In June, it blocked <b>35,365</b> of <b>35,367</b> detected attack attempts (99.99%) — the remaining 2 were logged for review but posed no confirmed risk. This was the highest monthly volume in the last 6 months.</p>' },
+  secTarget: { title:'Why web.boatsale is the top target', body:
+    '<p>web.boatsale is your public-facing sales portal, reachable directly from the internet — which is exactly why automated scanners and bots probe it far more than your internal-facing servers. It received <b>35,120</b> of the month\'s <b>35,367</b> total attack attempts.</p>'+
+    '<p>The good news: every one of those attempts was blocked by the firewall, and web.boatsale\'s actual server performance (CPU, memory, disk) stayed healthy and low all month — the attack traffic never reached the application.</p>' },
+  secWebshell: { title:'What is a webshell?', body:
+    '<p>A webshell is a malicious script an attacker plants on a server to gain remote control of it — one of the more serious website compromises possible.</p>'+
+    '<p>WSFinder scanned <b>775 files</b> across your web servers this month and found <b>zero</b> webshells. Your site files are clean.</p>' },
+  secMalware: { title:'Malware Distribution Detection', body:
+    '<p>WMDS continuously scans your public-facing URLs to make sure none of them are unknowingly serving malware to your visitors — a common way legitimate sites get blacklisted by browsers and search engines.</p>'+
+    '<p>31 URLs were scanned daily this month with <b>zero</b> malware detections. 25 URLs were flagged for general inspection (mostly slow/timeout responses, not security findings).</p>' }
+};
+
+document.querySelectorAll('[data-modal]').forEach(function(el){
+  el.addEventListener('click', function(){
+    var key = el.dataset.modal;
+    var c = modalContent[key];
+    if(c) openModal(c.title, c.body);
+  });
+});
+
+/* ================== 3. DATA ================== */
+var serverData = {
+  boatcon: {
+    ip:'10.10.100.10', color:'var(--c-boatcon)',
+    metrics: [
+      {name:'CPU Used', unit:'%', min:5.17, avg:5.33, max:5.63, scaleMax:100, warnAt:50, critAt:80},
+      {name:'MEM Used', unit:'%', min:14.84, avg:33.67, max:41.76, scaleMax:100, warnAt:70, critAt:85},
+      {name:'Load Average 5Min', unit:'', min:0.19, avg:0.22, max:0.45, scaleMax:4, warnAt:1, critAt:4},
+      {name:'Disk IO Busy', unit:'%', min:0.12, avg:0.14, max:0.34, scaleMax:100, warnAt:50, critAt:80},
+      {name:'FileSystem Used', unit:'%', min:36.58, avg:37.77, max:39.02, scaleMax:100, warnAt:75, critAt:90},
+    ],
+    outbps: {min:'5.96 k', avg:'121.90 k', max:'1.87 M'}
+  },
+  boatnet: {
+    ip:'10.10.200.11', color:'var(--c-boatnet)',
+    metrics: [
+      {name:'CPU Used', unit:'%', min:0.44, avg:1.10, max:57.88, scaleMax:100, warnAt:50, critAt:80},
+      {name:'MEM Used', unit:'%', min:35.67, avg:42.18, max:58.98, scaleMax:100, warnAt:70, critAt:85},
+      {name:'Load Average 5Min', unit:'', min:0.00, avg:0.07, max:3.57, scaleMax:4, warnAt:1, critAt:4},
+      {name:'Disk IO Busy', unit:'%', min:0.01, avg:0.08, max:10.75, scaleMax:100, warnAt:50, critAt:80},
+      {name:'FileSystem Used', unit:'%', min:42.01, avg:77.46, max:86.98, scaleMax:100, warnAt:75, critAt:90},
+    ],
+    outbps: {min:'7.36 k', avg:'954.05 k', max:'185.11 M'}
+  },
+  boatsale: {
+    ip:'42.96.58.89', color:'var(--c-boatsale)',
+    metrics: [
+      {name:'CPU Used', unit:'%', min:0.47, avg:0.72, max:3.40, scaleMax:100, warnAt:50, critAt:80},
+      {name:'MEM Used', unit:'%', min:54.53, avg:56.93, max:60.30, scaleMax:100, warnAt:70, critAt:85},
+      {name:'Load Average 5Min', unit:'', min:0.00, avg:0.02, max:0.26, scaleMax:4, warnAt:1, critAt:4},
+      {name:'Disk IO Busy', unit:'%', min:2.12, avg:2.78, max:9.81, scaleMax:100, warnAt:50, critAt:80},
+      {name:'FileSystem Used', unit:'%', min:12.32, avg:12.58, max:12.87, scaleMax:100, warnAt:75, critAt:90},
+    ],
+    outbps: {min:'10.50 k', avg:'85.95 k', max:'5.07 M'}
+  }
+};
+
+/* ================== 4. HELPERS ================== */
+function clampPct(v, max){ return Math.max(0, Math.min(100, (v/max)*100)); }
+function zoneColor(v, warnAt, critAt){ if(v>=critAt) return 'var(--crit)'; if(v>=warnAt) return 'var(--warn)'; return 'var(--ok)'; }
+function statusFor(name, val){
+  if(name.indexOf('FileSystem')>-1){ if(val>=90) return 'crit'; if(val>=75) return 'warn'; return 'ok'; }
+  if(name.indexOf('CPU')>-1){ if(val>=80) return 'crit'; if(val>=50) return 'warn'; return 'ok'; }
+  if(name.indexOf('MEM')>-1){ if(val>=85) return 'crit'; if(val>=70) return 'warn'; return 'ok'; }
+  if(name.indexOf('Disk IO')>-1){ if(val>=80) return 'crit'; if(val>=50) return 'warn'; return 'ok'; }
+  if(name.indexOf('Load')>-1){ if(val>=4) return 'crit'; if(val>=1) return 'warn'; return 'ok'; }
+  return 'ok';
+}
+function fmt(v, unit){ return v + unit; }
+
+/* ================== 5. RENDER: per-server KPI cards + range bars ================== */
+function buildKpiCards(serverKey){
+  var el = document.getElementById('kpi-' + serverKey);
+  if(!el) return;
+  var s = serverData[serverKey];
+  var html = '';
+  s.metrics.forEach(function(m){
+    var st = statusFor(m.name, m.max);
+    html += '<div class="card kpi">'+
+      '<div class="label">' + m.name + (m.unit ? ' (' + m.unit + ')' : '') + '</div>'+
+      '<div class="value"><span class="status-dot ' + st + '"></span>' + fmt(m.avg, m.unit) + '</div>'+
+      '<div class="sub">Min ' + fmt(m.min, m.unit) + ' · Max ' + fmt(m.max, m.unit) + '</div>'+
+    '</div>';
+  });
+  html += '<div class="card kpi">'+
+    '<div class="label">Out bps</div>'+
+    '<div class="value">' + s.outbps.avg + '</div>'+
+    '<div class="sub">Min ' + s.outbps.min + ' · Max ' + s.outbps.max + '</div>'+
+  '</div>';
+  el.innerHTML = html;
+}
+
+function buildRangeChart(serverKey){
+  var el = document.getElementById('range-' + serverKey);
+  if(!el) return;
+  var s = serverData[serverKey];
+  var html = '';
+  s.metrics.forEach(function(m){
+    var minP = clampPct(m.min, m.scaleMax);
+    var maxP = clampPct(m.max, m.scaleMax);
+    var avgP = clampPct(m.avg, m.scaleMax);
+    var warnP = clampPct(m.warnAt, m.scaleMax);
+    var critP = clampPct(m.critAt, m.scaleMax);
+    var color = zoneColor(m.max, m.warnAt, m.critAt);
+    var fillW = Math.max(2.5, maxP - minP);
+    var isLoad = m.scaleMax === 4;
+    var ticks = isLoad ? [0,1,2,3,4] : [0,25,50,75,100];
+
+    html += '<div class="range-row">'+
+      '<div class="range-label">' + m.name + (m.unit ? ' (' + m.unit + ')' : '') + '</div>'+
+      '<div class="range-track">'+
+        '<div class="range-zone" style="left:' + warnP + '%; width:' + Math.max(0,critP-warnP) + '%; background:rgba(251,191,36,.14);"></div>'+
+        '<div class="range-zone" style="left:' + critP + '%; width:' + Math.max(0,100-critP) + '%; background:rgba(248,113,113,.14);"></div>'+
+        '<div class="range-fill" style="left:' + minP + '%; width:' + fillW + '%; background:' + color + ';"></div>'+
+        '<div class="range-dot" style="left:' + minP + '%;" title="Min ' + fmt(m.min,m.unit) + '"></div>'+
+        '<div class="range-dot" style="left:' + maxP + '%;" title="Max ' + fmt(m.max,m.unit) + '"></div>'+
+        '<div class="range-avg-dot" style="left:' + avgP + '%; background:' + color + ';" title="Avg ' + fmt(m.avg,m.unit) + '"></div>'+
+      '</div>'+
+      '<div class="range-scale">' + ticks.map(function(t){ return '<span>' + t + (isLoad ? '' : '%') + '</span>'; }).join('') + '</div>'+
+      '<div class="range-values">'+
+        '<span class="rv"><span class="rv-swatch" style="background:transparent;border:2px solid var(--sub2);"></span>min <b>' + fmt(m.min,m.unit) + '</b></span>'+
+        '<span class="rv"><span class="rv-swatch" style="background:' + color + ';border:2px solid ' + color + ';"></span>avg <b>' + fmt(m.avg,m.unit) + '</b></span>'+
+        '<span class="rv"><span class="rv-swatch" style="background:transparent;border:2px solid var(--sub2);"></span>max <b>' + fmt(m.max,m.unit) + '</b></span>'+
+      '</div>'+
+    '</div>';
+  });
+  el.innerHTML = html;
+  requestAnimationFrame(function(){
+    el.querySelectorAll('.range-fill').forEach(function(f){ f.style.opacity = 1; });
+  });
+}
+
+['boatcon','boatnet','boatsale'].forEach(function(k){
+  buildKpiCards(k);
+  buildRangeChart(k);
+});
+
+/* ================== 6. RENDER: Overview comparison + capacity charts ================== */
+function buildCmpChart(){
+  var el = document.getElementById('cmpChart');
+  if(!el) return;
+  var metricNames = ['CPU Used','MEM Used','Load Average 5Min','Disk IO Busy','FileSystem Used'];
+  var servers = [
+    {key:'boatcon', label:'web.boatcon'},
+    {key:'boatnet', label:'web.boatnet'},
+    {key:'boatsale', label:'web.boatsale'}
+  ];
+  var html = '';
+  metricNames.forEach(function(mn){
+    html += '<div class="cmp-metric"><div class="cmp-metric-title">' + mn + '</div>';
+    servers.forEach(function(sv){
+      var m = serverData[sv.key].metrics.filter(function(x){ return x.name === mn; })[0];
+      var p = clampPct(m.avg, m.scaleMax);
+      html += '<div class="cmp-bar-row">'+
+        '<span class="cmp-name">' + sv.label + '</span>'+
+        '<div class="cmp-track"><div class="cmp-fill" data-w="' + p + '" style="background:' + serverData[sv.key].color + '"></div></div>'+
+        '<span class="cmp-val">' + fmt(m.avg, m.unit) + '</span>'+
+      '</div>';
+    });
+    html += '</div>';
+  });
+  el.innerHTML = html;
+  requestAnimationFrame(function(){
+    el.querySelectorAll('.cmp-fill').forEach(function(f){ f.style.width = f.dataset.w + '%'; });
+  });
+}
+
+function buildCapChart(){
+  var el = document.getElementById('capChart');
+  if(!el) return;
+  var servers = [
+    {key:'boatcon', label:'web.boatcon', status:'ok', text:'Healthy'},
+    {key:'boatnet', label:'web.boatnet', status:'warn', text:'Attention'},
+    {key:'boatsale', label:'web.boatsale', status:'ok', text:'Healthy'}
+  ];
+  var html = '';
+  servers.forEach(function(sv){
+    var m = serverData[sv.key].metrics.filter(function(x){ return x.name === 'FileSystem Used'; })[0];
+    var avgP = clampPct(m.avg, 100);
+    var maxP = clampPct(m.max, 100);
+    var color = zoneColor(m.max, m.warnAt, m.critAt);
+    html += '<div class="cap-row">'+
+      '<div class="cap-name"><span>' + sv.label + '</span><span class="pill pill-' + sv.status + '">' + sv.text + '</span></div>'+
+      '<div class="cap-track">'+
+        '<div class="cap-zone" style="left:75%;width:15%;background:rgba(251,191,36,.12);"></div>'+
+        '<div class="cap-zone" style="left:90%;width:10%;background:rgba(248,113,113,.12);"></div>'+
+        '<div class="cap-fill" data-w="' + avgP + '" style="background:' + color + '"></div>'+
+        '<div class="cap-max-marker" style="left:' + maxP + '%;" title="Peak ' + m.max + '%"></div>'+
+      '</div>'+
+      '<div class="cap-values"><span>Avg ' + m.avg + '%</span><span>Peak ' + m.max + '%</span></div>'+
+    '</div>';
+  });
+  el.innerHTML = html;
+  requestAnimationFrame(function(){
+    el.querySelectorAll('.cap-fill').forEach(function(f){ f.style.width = f.dataset.w + '%'; });
+  });
+}
+
+buildCmpChart();
+buildCapChart();
+
+/* ================== 7. RENDER: Security attack-type bars ================== */
+function buildAttackTypeChart(){
+  var el = document.getElementById('attackTypeChart');
+  if(!el) return;
+  var items = [
+    {label:'Standard Protocol', value:28066, color:'var(--crit)'},
+    {label:'LFI Attack', value:6593, color:'#fb923c'},
+    {label:'Other Vulnerabilities', value:320, color:'var(--warn)'},
+    {label:'PHP', value:105, color:'var(--accent)'},
+    {label:'Scanner (Bot)', value:20, color:'var(--mint)'},
+    {label:'Other', value:263, color:'var(--sub2)'}
+  ];
+  var max = Math.max.apply(null, items.map(function(i){ return i.value; }));
+  var html = '';
+  items.forEach(function(i){
+    var p = (i.value / max) * 100;
+    html += '<div class="cmp-bar-row" style="grid-template-columns:150px 1fr 90px;">'+
+      '<span class="cmp-name">' + i.label + '</span>'+
+      '<div class="cmp-track"><div class="cmp-fill" data-w="' + p + '" style="background:' + i.color + '"></div></div>'+
+      '<span class="cmp-val">' + i.value.toLocaleString() + '</span>'+
+    '</div>';
+  });
+  el.innerHTML = html;
+  requestAnimationFrame(function(){
+    el.querySelectorAll('.cmp-fill').forEach(function(f){ f.style.width = f.dataset.w + '%'; });
+  });
+}
+buildAttackTypeChart();
+
+/* ================== 8. RENDER: 6-month attack trend (approximate) ================== */
+function buildMonthTrendChart(){
+  var el = document.getElementById('monthTrendChart');
+  if(!el) return;
+  var months = [
+    {label:'Jan', value:100},
+    {label:'Feb', value:250},
+    {label:'Mar', value:1500},
+    {label:'Apr', value:8600},
+    {label:'May', value:18000},
+    {label:'Jun', value:35200, highlight:true},
+    {label:'Jul', value:300, note:'partial month'}
+  ];
+  var max = Math.max.apply(null, months.map(function(m){ return m.value; }));
+  var html = '';
+  months.forEach(function(m){
+    var p = (m.value / max) * 100;
+    var color = m.highlight ? 'var(--crit)' : 'var(--accent)';
+    html += '<div class="cmp-bar-row" style="grid-template-columns:60px 1fr 130px;">'+
+      '<span class="cmp-name">' + m.label + (m.highlight ? ' (peak)' : '') + '</span>'+
+      '<div class="cmp-track"><div class="cmp-fill" data-w="' + p + '" style="background:' + color + '"></div></div>'+
+      '<span class="cmp-val">~' + m.value.toLocaleString() + (m.note ? ' (' + m.note + ')' : '') + '</span>'+
+    '</div>';
+  });
+  el.innerHTML = html;
+  requestAnimationFrame(function(){
+    el.querySelectorAll('.cmp-fill').forEach(function(f){ f.style.width = f.dataset.w + '%'; });
+  });
+}
+buildMonthTrendChart();
+
+/* ================== 9. RECOMMENDATION STATUS TRACKING (local only) ================== */
+function setRecStatusUI(wrap, status){
+  wrap.querySelectorAll('button').forEach(function(b){
+    b.classList.toggle('active', b.dataset.status === status);
+  });
+}
+function renderRecSummary(counts){
+  var el = document.getElementById('recStatusSummary');
+  if(!el) return;
+  el.innerHTML =
+    '<span style="color:var(--crit);font-weight:700;">' + counts.open + ' Open</span> &nbsp;·&nbsp; '+
+    '<span style="color:var(--warn);font-weight:700;">' + counts.progress + ' In Progress</span> &nbsp;·&nbsp; '+
+    '<span style="color:var(--ok);font-weight:700;">' + counts.resolved + ' Resolved</span> &nbsp;·&nbsp; '+
+    '<span style="color:var(--sub2);">out of ' + (counts.open+counts.progress+counts.resolved) + ' recommendations — status is saved in your browser only, not shared with TechValley yet.</span>';
+}
+function refreshRecSummary(){
+  var counts = {open:0, progress:0, resolved:0};
+  document.querySelectorAll('.rec-status').forEach(function(wrap){
+    var activeBtn = wrap.querySelector('button.active');
+    var st = activeBtn ? activeBtn.dataset.status : 'open';
+    counts[st] = (counts[st]||0) + 1;
+  });
+  renderRecSummary(counts);
+}
+function initRecStatus(){
+  var items = document.querySelectorAll('.rec-item');
+  items.forEach(function(item, idx){
+    var titleEl = item.querySelector('.rec-title');
+    var m = titleEl ? titleEl.textContent.match(/^\d+/) : null;
+    var recId = 'rec-' + (m ? m[0] : (idx+1));
+    var saved = 'open';
+    try{ saved = localStorage.getItem('tv-rec-status-' + recId) || 'open'; }catch(e){}
+    var wrap = document.createElement('div');
+    wrap.className = 'rec-status';
+    wrap.innerHTML =
+      '<button type="button" data-status="open">Open</button>'+
+      '<button type="button" data-status="progress">In Progress</button>'+
+      '<button type="button" data-status="resolved">Resolved</button>';
+    item.appendChild(wrap);
+    setRecStatusUI(wrap, saved);
+    wrap.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        setRecStatusUI(wrap, btn.dataset.status);
+        try{ localStorage.setItem('tv-rec-status-' + recId, btn.dataset.status); }catch(e){}
+        refreshRecSummary();
+      });
+    });
+  });
+  refreshRecSummary();
+}
+initRecStatus();
+
+/* ================== 10. PRINT: expand collapsed detail so exports keep full analysis ================== */
+window.addEventListener('beforeprint', function(){
+  document.querySelectorAll('details.more').forEach(function(d){
+    d.dataset.wasOpen = d.open ? '1' : '0';
+    d.open = true;
+  });
+});
+window.addEventListener('afterprint', function(){
+  document.querySelectorAll('details.more').forEach(function(d){
+    d.open = d.dataset.wasOpen === '1';
+  });
+});
+</script>
+</body>
+</html>
